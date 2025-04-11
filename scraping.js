@@ -228,6 +228,14 @@ const siteConfig = {
       "._1fQZEK", // Product in search results
       "._1YokD2._2MImQY", // Product in category page
       "._1YokD2._2MImQY ._1AtVbE", // Nested product cards
+      "div[data-id]", // Generic product container
+      "._2kHMtA", // Alternative product card
+      "._1fQZEK", // Another product card variant
+      "._1YokD2._2MImQY ._4ddWXP", // Nested grid products
+      "._1YokD2._2MImQY ._1xHGtK", // Nested list products
+      "._1YokD2._2MImQY ._2kHMtA", // Nested new products
+      "._1YokD2._2MImQY ._1fQZEK", // Nested search results
+      "._1YokD2._2MImQY div[data-id]", // Nested generic products
     ],
     productTitle: [
       "._4rR01T", // Main title
@@ -236,18 +244,26 @@ const siteConfig = {
       "._2WkVRV", // Brand name
       "._2B099V", // Product name
       "._1YokD2._2MImQY ._4rR01T", // Nested title
+      "._1YokD2._2MImQY .s1Q9rs", // Nested alternative title
+      "._1YokD2._2MImQY .IRpwTa", // Nested another variant
+      "._1YokD2._2MImQY ._2WkVRV", // Nested brand name
+      "._1YokD2._2MImQY ._2B099V", // Nested product name
     ],
     productDescription: [
       "._1xgFaf", // Main description
       ".fMghEO", // Features
       "._3Djpdu", // Additional info
       "._1YokD2._2MImQY ._1xgFaf", // Nested description
+      "._1YokD2._2MImQY .fMghEO", // Nested features
+      "._1YokD2._2MImQY ._3Djpdu", // Nested additional info
     ],
     productFeatures: [
       "._1mXcCf", // Features list
       "._3ExdjG", // Key features
       "li._21lJbe", // Feature items
       "._1YokD2._2MImQY ._1mXcCf", // Nested features
+      "._1YokD2._2MImQY ._3ExdjG", // Nested key features
+      "._1YokD2._2MImQY li._21lJbe", // Nested feature items
     ],
     productMaterials: {
       containers: [
@@ -262,6 +278,17 @@ const siteConfig = {
         ".LGMpV",
         "._1AtVbE",
         "._16PBlm",
+        "._1YokD2._2MImQY li",
+        "._1YokD2._2MImQY td",
+        "._1YokD2._2MImQY tr",
+        "._1YokD2._2MImQY .crafting",
+        "._1YokD2._2MImQY div",
+        "._1YokD2._2MImQY p",
+        "._1YokD2._2MImQY span",
+        "._1YokD2._2MImQY ul",
+        "._1YokD2._2MImQY .LGMpV",
+        "._1YokD2._2MImQY ._1AtVbE",
+        "._1YokD2._2MImQY ._16PBlm",
       ],
       textMatch: [
         // Same material identifiers as Amazon
@@ -436,10 +463,38 @@ const siteConfig = {
         "cradle to cradle",
       ],
     },
-    price: ["._30jeq3", "._1_WHN1"],
-    rating: ["._3LWZlK", "._2d4LTz"],
+    price: [
+      "._30jeq3",
+      "._1_WHN1",
+      "._1YokD2._2MImQY ._30jeq3",
+      "._1YokD2._2MImQY ._1_WHN1",
+    ],
+    rating: [
+      "._3LWZlK",
+      "._2d4LTz",
+      "._1YokD2._2MImQY ._3LWZlK",
+      "._1YokD2._2MImQY ._2d4LTz",
+    ],
     isProductValid: (node) => {
-      return node.querySelector("._4rR01T") || node.querySelector("._30jeq3");
+      // Check for any of the title selectors
+      const hasTitle = [
+        "._4rR01T",
+        ".s1Q9rs",
+        ".IRpwTa",
+        "._2WkVRV",
+        "._2B099V",
+      ].some((selector) => node.querySelector(selector));
+
+      // Check for any of the price selectors
+      const hasPrice = ["._30jeq3", "._1_WHN1"].some((selector) =>
+        node.querySelector(selector)
+      );
+
+      // Check for product data-id attribute
+      const hasDataId = node.hasAttribute("data-id");
+
+      // Product is valid if it has either a title, price, or data-id
+      return hasTitle || hasPrice || hasDataId;
     },
     domainMatches: ["flipkart.com"],
   },
@@ -801,6 +856,27 @@ function getProductElements() {
       }
     } catch (error) {
       console.error(`Error with selector "${selector}":`, error);
+    }
+  }
+
+  // For Flipkart, also check for dynamically loaded products
+  if (site === "flipkart" && productElements.length === 0) {
+    try {
+      // Check for products in the main content area
+      const mainContent = document.querySelector("._1YokD2._2MImQY");
+      if (mainContent) {
+        const dynamicElements = mainContent.querySelectorAll(
+          "._1AtVbE, ._4ddWXP, ._1xHGtK, ._2kHMtA, ._1fQZEK, div[data-id]"
+        );
+        if (dynamicElements.length > 0) {
+          console.log(
+            `Found ${dynamicElements.length} dynamic products in main content`
+          );
+          productElements = Array.from(dynamicElements);
+        }
+      }
+    } catch (error) {
+      console.error("Error finding dynamic Flipkart products:", error);
     }
   }
 
