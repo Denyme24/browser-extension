@@ -991,6 +991,39 @@ function extractProductInfo(productElement) {
     'metal', 'aluminum', 'steel', 'tin', 'copper', 'brass', 'iron'
   ];
   
+  // Extend existing recyclable terms with clothing products
+  recyclableTerms.push(
+    'regular fit t-shirt', 'h&m products', 'cotton t-shirts', 'denim jeans',
+    'wool sweaters', 'linen shirts', 'recyclable clothing', 'recycled polyester clothing'
+  );
+  
+  // Extend existing biodegradable terms with clothing products
+  biodegradableTerms.push(
+    'organic cotton t-shirts', 'bamboo fabric clothing', 'hemp clothing',
+    'linen clothing', 'wool clothing', 'biodegradable clothing', 'eco-friendly clothing'
+  );
+  
+  // Extend existing recyclable terms with cotton products
+  recyclableTerms.push(
+    'cardboard boxes', 'paper envelopes', 'aluminum cans', 'glass jars', 'glass bottles',
+    'rigid plastics', 'bubble wrap', 'stainless steel bottles', 'glass food storage containers',
+    'aluminum foil', 'metal kitchen utensils', 'paper notebooks', 'metal stationery',
+    'ink cartridges', 'smartphones', 'laptops', 'rechargeable batteries',
+    'tin cans', 'steel cans', 'plastic containers', 'glassware', 'metal cutlery',
+    'cotton fabric', 'cotton clothing', 'cotton bags', 'cotton towels', 'cotton sheets'
+  );
+  
+  // Extend existing biodegradable terms with cotton products
+  biodegradableTerms.push(
+    'bamboo toothbrushes', 'coconut fiber scrubbers', 'jute shopping bags',
+    'cotton shopping bags', 'areca palm leaf plates', 'cornstarch trash bags',
+    'biodegradable sanitary pads', 'natural loofahs', 'compostable face wipes',
+    'bamboo cotton buds', 'wooden cutlery', 'sugarcane bagasse bowls',
+    'biodegradable cling wrap', 'coir pots', 'seed paper products',
+    'compostable plant grow bags', 'hemp bags', 'palm leaf bowls', 'cornstarch utensils',
+    'cotton fabric', 'cotton clothing', 'cotton bags', 'cotton towels', 'cotton sheets'
+  );
+  
   // Special case for common plastic product searches
   const plasticProducts = [
     'plastic bag', 'plastic bags', 'ziplock', 'zipbag', 'sandwich bag',
@@ -1013,6 +1046,30 @@ function extractProductInfo(productElement) {
     'glass container', 'metal container', 'recycled products', 'recyclable packaging',
     'refillable container', 'reusable packaging', 'zero waste packaging'
   ];
+  
+  // Extend existing recyclable terms with bathrobe and beauty products
+  recyclableTerms.push(
+    'bathrobe', 'beauty product containers', 'glass beauty bottles', 'metal beauty tins',
+    'plastic beauty jars', 'recyclable beauty packaging'
+  );
+  
+  // Extend existing biodegradable terms with bathrobe and beauty products
+  biodegradableTerms.push(
+    'biodegradable bathrobe', 'natural beauty products', 'compostable beauty wipes',
+    'biodegradable beauty packaging', 'eco-friendly beauty products'
+  );
+  
+  // Add different biodegradable waste
+  biodegradableTerms.push(
+    'food waste', 'garden waste', 'compostable waste', 'organic waste',
+    'biodegradable waste bags'
+  );
+  
+  // Add different recyclable waste
+  recyclableTerms.push(
+    'paper waste', 'metal waste', 'plastic waste', 'glass waste',
+    'recyclable waste bags'
+  );
   
   const fullText = (productElement.textContent || '').toLowerCase();
   const productTitle = (title || '').toLowerCase();
