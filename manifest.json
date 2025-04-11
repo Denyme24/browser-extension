@@ -1,10 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "3RVision",
+  "name": "3RVision - Eco-Friendly Product Filter",
   "version": "1.0",
-  "description": "Filter e-commerce websites to show only eco-friendly products",
-  "permissions": ["activeTab", "storage", "scripting"],
-  "host_permissions": ["*://*/*"],
+  "description": "Helps identify eco-friendly products by analyzing material composition",
+  "permissions": ["activeTab", "storage"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -13,9 +12,6 @@
       "128": "icons/logo.png"
     }
   },
-  "background": {
-    "service_worker": "background.js"
-  },
   "content_scripts": [
     {
       "matches": [
@@ -23,23 +19,33 @@
         "*://*.amazon.in/*",
         "*://*.amazon.co.uk/*",
         "*://*.amazon.de/*",
-        "*://*.amazon.fr/*",
-        "*://*.amazon.it/*",
-        "*://*.amazon.es/*",
         "*://*.amazon.ca/*",
-        "*://*.amazon.com.au/*",
-        "*://*.amazon.co.jp/*",
+        "*://*.flipkart.com/*",
+        "*://*.myntra.com/*",
+        "*://*.jiomart.com/*",
         "*://*.ebay.com/*",
         "*://*.walmart.com/*",
         "*://*.etsy.com/*",
         "*://*.target.com/*",
-        "*://*.myntra.com/*",
-        "*://*.jiomart.com/*",
-        "*://*.flipkart.com/*"
+        "*://*.shopify.com/*",
+        "*://*.snapdeal.com/*",
+        "*://*.ajio.com/*",
+        "*://*.nykaa.com/*",
+        "*://*.purplle.com/*",
+        "*://*.firstcry.com/*",
+        "*://*.meesho.com/*",
+        "*://*.shopclues.com/*",
+        "*://*.paytmmall.com/*",
+        "*://*.tatacliq.com/*",
+        "*://*.reliancedigital.in/*",
+        "*://*.croma.com/*",
+        "*://*.vijaysales.com/*"
       ],
-      "js": ["scraping.js", "content.js"]
+      "js": ["content.js", "scraping.js"],
+      "css": ["content.css"]
     }
   ],
+  "host_permissions": ["*://*/*"],
   "icons": {
     "16": "icons/logo.png",
     "48": "icons/logo.png",
