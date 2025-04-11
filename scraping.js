@@ -953,7 +953,51 @@ function findElementsWithText(rootElement, selectors, textToMatch) {
   return results;
 }
 
-// Extract material information using the textMatch approach
+// Expand the list of biodegradable terms
+const biodegradableTerms = [
+  "biodegradable",
+  "compostable",
+  "decomposable",
+  "eco-friendly",
+  "organic",
+  "natural",
+  "plant-based",
+  "cotton",
+  "wool",
+  "linen",
+  "hemp",
+  "jute",
+  "sisal",
+  "bamboo",
+  "cork",
+  "wood",
+  "paper",
+  "cardboard",
+  "bagasse",
+  "wheat straw",
+  "mushroom",
+  "mycelium",
+  "tencel",
+  "lyocell",
+  "modal",
+  "kapok",
+  "ramie",
+  "flax",
+  "bioplastic", // New term
+  "bio-based",  // New term
+  "starch-based", // New term
+  "PLA", // Polylactic Acid, a common biodegradable plastic
+  "PHA", // Polyhydroxyalkanoates, another biodegradable plastic
+  "cellulose", // New term
+  "palm leaf", // New term
+  "banana leaf", // New term
+  "areca leaf", // New term
+  "coconut coir", // New term
+  "seaweed", // New term
+  "algae", // New term
+];
+
+// Improve pattern matching logic
 function extractMaterialTextInfo(element, materialConfig) {
   if (
     !materialConfig ||
@@ -987,6 +1031,13 @@ function extractMaterialTextInfo(element, materialConfig) {
     const children = materialElement.children;
     for (let i = 0; i < children.length; i++) {
       materialText += children[i].textContent.trim() + " ";
+    }
+  });
+
+  // Additional logic to check for biodegradable context
+  biodegradableTerms.forEach((term) => {
+    if (materialText.toLowerCase().includes(term.toLowerCase())) {
+      console.log(`Detected biodegradable term: ${term}`);
     }
   });
 
@@ -1152,6 +1203,18 @@ function extractProductInfo(productElement) {
     "kapok",
     "ramie",
     "flax",
+    "bioplastic", // New term
+    "bio-based",  // New term
+    "starch-based", // New term
+    "PLA", // Polylactic Acid, a common biodegradable plastic
+    "PHA", // Polyhydroxyalkanoates, another biodegradable plastic
+    "cellulose", // New term
+    "palm leaf", // New term
+    "banana leaf", // New term
+    "areca leaf", // New term
+    "coconut coir", // New term
+    "seaweed", // New term
+    "algae", // New term
   ];
 
   const recyclableTerms = [
