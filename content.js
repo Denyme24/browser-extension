@@ -1275,36 +1275,8 @@ function createMaterialInfoDisplay(materialInfo, ecoScore) {
 
 // Function to check if a product is recyclable or biodegradable
 function isRecyclableOrBiodegradable(materialInfo) {
-  for (const material of materialInfo.materials) {
-    const lowerMaterial = material.toLowerCase();
-
-    // Check eco-friendly materials
-    for (const [ecoMaterial, data] of Object.entries(
-      materialConfig.ecoFriendlyMaterials
-    )) {
-      if (
-        lowerMaterial.includes(ecoMaterial.toLowerCase()) &&
-        (data.recyclable || data.biodegradable)
-      ) {
-        return true;
-      }
-    }
-
-    // Special case for wood-based materials (which are biodegradable)
-    if (
-      lowerMaterial.includes("wood") ||
-      lowerMaterial.includes("wooden") ||
-      lowerMaterial.includes("bamboo") ||
-      lowerMaterial.includes("paper") ||
-      lowerMaterial.includes("cotton") ||
-      lowerMaterial.includes("biodegradable") ||
-      lowerMaterial.includes("compostable") ||
-      lowerMaterial.includes("natural")
-    ) {
-      return true;
-    }
-  }
-  return false;
+  const ecoScore = calculateEcoScore(materialInfo);
+  return ecoScore >= materialConfig.minEcoScore;
 }
 
 // Function to show all products (ensure displays are removed)
