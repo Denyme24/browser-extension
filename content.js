@@ -802,7 +802,7 @@ const materialConfig = {
 
 // Function to extract material information from product text
 function extractMaterialInfo(text) {
-  console.log("Extracting materials from text:", text.substring(0, 200)); // Log first 200 chars
+  console.log("Extracting materials from text:", text.substring(0, 200));
   const materialInfo = {
     materials: [],
     percentages: [],
@@ -811,99 +811,232 @@ function extractMaterialInfo(text) {
   // Normalize text: lowercase, remove extra spaces
   const normalizedText = text.toLowerCase().replace(/\s+/g, " ");
 
-  // Common patterns for material information
+  // Expanded patterns for material information
   const patterns = [
-    // Pattern for "100% cotton", "80% recycled polyester"
+    // Pattern for percentage followed by material
     /(\d{1,3})\s*%\s*([a-zA-Z][a-zA-Z\s-]*[a-zA-Z])/g,
-    // Pattern for "material: stainless steel", "made of bamboo"
-    /(?:material|made of|contains|composed of|constructed from|fabric):\s*([a-zA-Z][a-zA-Z\s-]*[a-zA-Z])/gi,
-    // Pattern for "cotton blend", "polyester blend"
-    /([a-zA-Z][a-zA-Z\s-]*[a-zA-Z])\s*blend/gi,
-    // Pattern for "organic cotton", "recycled polyester"
-    /(organic|recycled|stainless|food-grade|grade)\s+([a-zA-Z][a-zA-Z\s-]*[a-zA-Z])/gi,
-    // Pattern to find standalone materials mentioned (like "steel", "wood")
-    /(?:\b)(stainless steel|steel|aluminum|copper|brass|wood|bamboo|ceramic|glass|silicone|plastic|cotton|polyester|nylon|wool|silk)(?:\b)/gi,
+
+    // Pattern for material followed by percentage
+    /([a-zA-Z][a-zA-Z\s-]*[a-zA-Z])\s*(\d{1,3})\s*%/g,
+
+    // Material after indicators
+    /(?:material|made of|contains|composed of|constructed from|fabric|made from|comprising|consists of|built with|created from)(?:\s*:|\s+)?\s*([a-zA-Z][a-zA-Z\s-/,]*[a-zA-Z])/gi,
+
+    // Materials with modifiers
+    /(organic|recycled|stainless|food-grade|grade|natural|eco-friendly|sustainable|pure|100%)\s+([a-zA-Z][a-zA-Z\s-]*[a-zA-Z])/gi,
+
+    // Common material names with clear boundaries
+    /(?:\b)(stainless steel|steel|aluminum|copper|brass|wood|bamboo|ceramic|glass|silicone|plastic|cotton|polyester|nylon|wool|silk|linen|hemp|jute|cork|cotton|biodegradable|compostable)(?:\b)/gi,
+
+    // Additional pattern for materials in lists
+    /(?:•|\*|\-|,|\.|;)\s*([a-zA-Z][a-zA-Z\s-]*(?:fiber|cotton|wool|polyester|nylon|plastic|wood|metal|glass|paper|bamboo|hemp|jute|silk|linen))/gi,
+
+    // Product type patterns that imply materials
+    /(?:\b)(cotton|wooden|plastic|metal|glass|bamboo|woolen|leather|silicone|ceramic)\s+(shirt|pants|dress|utensil|container|bottle|bag|furniture|product)(?:\b)/gi,
   ];
 
-  // Keep track of found materials to avoid duplicates
-  const foundMaterials = new Set();
-
+  // Process each pattern
   patterns.forEach((pattern, patternIndex) => {
     let match;
     while ((match = pattern.exec(normalizedText)) !== null) {
+      // Extract material and percentage based on pattern
       let material = "";
-      let percentage = 100; // Default percentage
+      let percentage = 100;
 
+      // Different extraction logic based on pattern type
       if (patternIndex === 0) {
-        // Percentage pattern
+        // Percentage followed by material
         percentage = parseInt(match[1]);
         material = match[2].trim();
-      } else if (patternIndex === 1 || patternIndex === 2) {
-        // Material keyword patterns
+      } else if (patternIndex === 1) {
+        // Material followed by percentage
+        material = match[1].trim();
+        percentage = parseInt(match[2]);
+      } else if (patternIndex === 2) {
+        // Material after indicators
         material = match[1].trim();
       } else if (patternIndex === 3) {
-        // Modifier + material pattern
-        material = (match[1] + " " + match[2]).trim(); // e.g., "organic cotton", "stainless steel"
-      } else if (patternIndex === 4) {
-        // Standalone material pattern
+        // Modifier + material
+        material = (match[1] + " " + match[2]).trim();
+      } else if (patternIndex === 4 || patternIndex === 5) {
+        // Common material names or materials in lists
+        material = match[1].trim();
+      } else if (patternIndex === 6) {
+        // Product type implies material
         material = match[1].trim();
       }
 
-      // Standardize common variations (e.g., steel -> stainless steel if context available)
-      if (material === "steel" && normalizedText.includes("stainless")) {
-        material = "stainless steel";
-      }
+      // Clean up the material name
+      material = material.replace(/,$/, "").trim();
 
-      if (material && !foundMaterials.has(material)) {
-        // Check if this material is known
-        const isKnownMaterial =
-          Object.keys(materialConfig.ecoFriendlyMaterials).some((m) =>
-            material.includes(m)
-          ) ||
-          Object.keys(materialConfig.nonEcoFriendlyMaterials).some((m) =>
-            material.includes(m)
-          );
+      // Standardize variations
+      material = standardizeMaterialName(material, normalizedText);
+
+      // Add to materials if valid and not duplicate
+      if (
+        material &&
+        !materialInfo.materials.some(
+          (m) => m.toLowerCase() === material.toLowerCase()
+        )
+      ) {
+        // Check if material is known
+        const isKnownMaterial = isRecognizedMaterial(material, materialConfig);
 
         if (isKnownMaterial) {
           console.log(`Found material: ${material}, Percentage: ${percentage}`);
           materialInfo.materials.push(material);
           materialInfo.percentages.push(percentage);
-          foundMaterials.add(material);
         }
       }
     }
   });
 
-  // If no materials found via patterns, check common single words from config
+  // Add context-based materials detection
+  addContextBasedMaterials(materialInfo, normalizedText, materialConfig);
+
+  // Fallback for empty results
   if (materialInfo.materials.length === 0) {
-    const allKnownMaterials = [
-      ...Object.keys(materialConfig.ecoFriendlyMaterials),
-      ...Object.keys(materialConfig.nonEcoFriendlyMaterials),
-    ];
-    allKnownMaterials.forEach((knownMaterial) => {
-      if (
-        normalizedText.includes(knownMaterial) &&
-        !foundMaterials.has(knownMaterial)
-      ) {
-        console.log(`Found fallback material: ${knownMaterial}`);
-        materialInfo.materials.push(knownMaterial);
-        materialInfo.percentages.push(100); // Default percentage
-        foundMaterials.add(knownMaterial);
-      }
-    });
+    checkForKnownMaterials(materialInfo, normalizedText, materialConfig);
   }
 
   console.log("Extracted Material Info:", materialInfo);
   return materialInfo;
 }
 
-// Function to calculate eco-friendliness score with enhanced metrics
+// Helper function to standardize material names
+function standardizeMaterialName(material, fullText) {
+  // Handle common variations
+  if (material === "steel" && fullText.includes("stainless")) {
+    return "stainless steel";
+  }
+  if (material === "organic" && fullText.includes("organic cotton")) {
+    return "organic cotton";
+  }
+  if (
+    material === "recycled" &&
+    (fullText.includes("recycled polyester") ||
+      fullText.includes("recycled plastic"))
+  ) {
+    return fullText.includes("recycled polyester")
+      ? "recycled polyester"
+      : "recycled plastic";
+  }
+
+  // Remove filler words
+  return material
+    .replace(/\b(and|with|made|from|of|the|a)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Helper function to check if a material is in our database
+function isRecognizedMaterial(materialName, config) {
+  const lowerMaterial = materialName.toLowerCase();
+
+  // Check eco-friendly materials
+  for (const ecoMaterial of Object.keys(config.ecoFriendlyMaterials)) {
+    if (lowerMaterial.includes(ecoMaterial.toLowerCase())) {
+      return true;
+    }
+  }
+
+  // Check non-eco-friendly materials
+  for (const nonEcoMaterial of Object.keys(config.nonEcoFriendlyMaterials)) {
+    if (lowerMaterial.includes(nonEcoMaterial.toLowerCase())) {
+      return true;
+    }
+  }
+
+  // Check for general categories
+  const generalCategories = [
+    "cotton",
+    "wool",
+    "plastic",
+    "biodegradable",
+    "wood",
+    "bamboo",
+    "glass",
+    "metal",
+    "paper",
+  ];
+  return generalCategories.some((category) => lowerMaterial.includes(category));
+}
+
+// Add materials based on contextual analysis
+function addContextBasedMaterials(materialInfo, text, config) {
+  // Check for eco-claims that indicate materials
+  if (
+    text.includes("plastic-free") &&
+    !materialInfo.materials.some((m) => m.includes("plastic"))
+  ) {
+    materialInfo.materials.push("plastic-free");
+    materialInfo.percentages.push(100);
+  }
+
+  // Product type based material inference
+  if (
+    (text.includes("cotton shirt") ||
+      text.includes("cotton t-shirt") ||
+      text.includes("cotton tee")) &&
+    !materialInfo.materials.some((m) => m.includes("cotton"))
+  ) {
+    materialInfo.materials.push("cotton");
+    materialInfo.percentages.push(100);
+  }
+
+  // Check for explicit eco-friendly claims
+  const ecoTerms = [
+    "biodegradable",
+    "compostable",
+    "eco-friendly",
+    "sustainable",
+  ];
+  for (const term of ecoTerms) {
+    if (
+      text.includes(term) &&
+      !materialInfo.materials.some((m) => m.includes(term))
+    ) {
+      materialInfo.materials.push(term);
+      materialInfo.percentages.push(100);
+    }
+  }
+}
+
+// Last resort fallback for material detection
+function checkForKnownMaterials(materialInfo, text, config) {
+  const allMaterials = [
+    ...Object.keys(config.ecoFriendlyMaterials),
+    ...Object.keys(config.nonEcoFriendlyMaterials),
+  ];
+
+  allMaterials.forEach((material) => {
+    if (text.includes(material.toLowerCase())) {
+      materialInfo.materials.push(material);
+      materialInfo.percentages.push(100);
+    }
+  });
+}
+
+// Enhance the calculateEcoScore function:
+
 function calculateEcoScore(materialInfo) {
   let totalScore = 0;
   let totalWeight = 0;
   let recyclableCount = 0;
   let biodegradableCount = 0;
   let totalMaterials = 0;
+  let ecoClaimsBonus = 0;
+
+  // Check for eco-claims for bonus points
+  materialInfo.materials.forEach((material) => {
+    if (
+      material.includes("eco-claim:") ||
+      material.includes("eco-friendly") ||
+      material.includes("sustainable")
+    ) {
+      ecoClaimsBonus = 0.1; // Small bonus for eco-claims
+    }
+  });
 
   materialInfo.materials.forEach((material, index) => {
     const percentage = materialInfo.percentages[index] || 100;
@@ -913,7 +1046,9 @@ function calculateEcoScore(materialInfo) {
     let isBiodegradable = false;
     const lowerMaterial = material.toLowerCase();
 
-    // Check eco-friendly materials
+    // Enhanced classification with more specificity
+
+    // Check eco-friendly materials first
     for (const [ecoMaterial, data] of Object.entries(
       materialConfig.ecoFriendlyMaterials
     )) {
@@ -922,6 +1057,12 @@ function calculateEcoScore(materialInfo) {
         materialScore = data.score;
         isRecyclable = data.recyclable;
         isBiodegradable = data.biodegradable;
+
+        // Special case for cotton - always biodegradable
+        if (lowerMaterial.includes("cotton")) {
+          isBiodegradable = true;
+        }
+
         break;
       }
     }
@@ -941,20 +1082,25 @@ function calculateEcoScore(materialInfo) {
       }
     }
 
-    // Special handling for wood products if not found in our config
-    if (
-      !materialData &&
-      (lowerMaterial.includes("wood") ||
-        lowerMaterial.includes("wooden") ||
-        lowerMaterial.includes("bamboo") ||
-        lowerMaterial.includes("natural"))
-    ) {
-      materialScore = 0.9; // High eco score for wood
+    // Special cases and refinements
+
+    // Natural materials are almost always biodegradable
+    if (!materialData && isNaturalMaterial(lowerMaterial)) {
+      materialScore = 0.9;
       isRecyclable = true;
       isBiodegradable = true;
     }
 
-    // Update counts
+    // Check for explicitly biodegradable claims
+    if (
+      lowerMaterial.includes("biodegradable") ||
+      lowerMaterial.includes("compostable")
+    ) {
+      isBiodegradable = true;
+      if (materialScore < 0.5) materialScore = 0.8; // Boost score if claimed biodegradable
+    }
+
+    // Update counts with enhanced logic
     if (isRecyclable) recyclableCount++;
     if (isBiodegradable) biodegradableCount++;
     totalMaterials++;
@@ -971,18 +1117,52 @@ function calculateEcoScore(materialInfo) {
     return 0.5; // Neutral score
   }
 
-  // Calculate additional scores
+  // Enhanced scoring with better weightings
   const recyclabilityScore =
     (recyclableCount / totalMaterials) *
     materialConfig.scoringWeights.recyclability;
+
   const biodegradabilityScore =
     (biodegradableCount / totalMaterials) *
-    materialConfig.scoringWeights.biodegradability;
+    materialConfig.scoringWeights.biodegradability *
+    1.2; // Give more weight to biodegradability
 
-  // Combine all scores
+  // Add eco-claims bonus
   const finalScore =
-    totalScore / totalWeight + recyclabilityScore + biodegradabilityScore;
+    totalScore / totalWeight +
+    recyclabilityScore +
+    biodegradabilityScore +
+    ecoClaimsBonus;
+
   return Math.max(0, Math.min(1, finalScore)); // Ensure score is between 0 and 1
+}
+
+// Helper function to identify natural materials
+function isNaturalMaterial(materialName) {
+  const naturalMaterials = [
+    "cotton",
+    "wool",
+    "silk",
+    "linen",
+    "hemp",
+    "jute",
+    "bamboo",
+    "cork",
+    "wood",
+    "leather",
+    "paper",
+    "sisal",
+    "coconut",
+    "kapok",
+    "ramie",
+    "flax",
+    "cashmere",
+    "mohair",
+    "down",
+    "feather",
+  ];
+
+  return naturalMaterials.some((material) => materialName.includes(material));
 }
 
 // Function to create a button to show material info
@@ -1175,9 +1355,23 @@ function createMaterialInfoDisplay(materialInfo, ecoScore) {
     (m) =>
       m.includes("biodegradable") ||
       m.includes("compostable") ||
-      m.includes("cotton") ||
+      m.includes("cotton") || // Cotton should be properly identified as biodegradable
       m.includes("bamboo") ||
-      m.includes("natural")
+      m.includes("natural") ||
+      m.includes("organic") ||
+      m.includes("wool") ||
+      m.includes("hemp") ||
+      m.includes("linen") ||
+      m.includes("jute") ||
+      m.includes("sisal") ||
+      // Add more natural biodegradable fibers
+      m.includes("tencel") ||
+      m.includes("lyocell") ||
+      m.includes("modal") ||
+      m.includes("cork") ||
+      m.includes("wood") ||
+      m.includes("plant") ||
+      m.includes("cellulose")
   );
 
   const hasRecyclable = materialInfo.materials.some(
@@ -1346,11 +1540,66 @@ function filterProducts() {
         } has detected plastics: ${productInfo.plasticsDetected.join(", ")}`
       );
 
-      // Add any plastics that weren't already found
+      // Improved logic for adding detected plastics
       productInfo.plasticsDetected.forEach((plastic) => {
-        if (!materialInfo.materials.includes(plastic)) {
-          materialInfo.materials.push(plastic);
+        const plasticAlreadyListed = materialInfo.materials.some((m) =>
+          m.toLowerCase().includes(plastic.toLowerCase())
+        );
+
+        if (!plasticAlreadyListed) {
+          // Check if this is recycled plastic (which would be better than regular plastic)
+          if (
+            productInfo.text
+              .toLowerCase()
+              .includes("recycled " + plastic.toLowerCase())
+          ) {
+            materialInfo.materials.push("recycled " + plastic);
+          } else {
+            materialInfo.materials.push(plastic);
+          }
           materialInfo.percentages.push(50); // Default percentage when unknown
+        }
+      });
+    }
+
+    // Similarly improve biodegradable detection
+    if (
+      productInfo.biodegradableDetected &&
+      productInfo.biodegradableDetected.length > 0
+    ) {
+      console.log(
+        `Product ${
+          index + 1
+        } has biodegradable materials: ${productInfo.biodegradableDetected.join(
+          ", "
+        )}`
+      );
+
+      // Improved logic for adding biodegradable materials
+      productInfo.biodegradableDetected.forEach((material) => {
+        const materialAlreadyListed = materialInfo.materials.some((m) =>
+          m.toLowerCase().includes(material.toLowerCase())
+        );
+
+        if (!materialAlreadyListed) {
+          // Check for organic or special versions
+          if (
+            productInfo.text
+              .toLowerCase()
+              .includes("organic " + material.toLowerCase())
+          ) {
+            materialInfo.materials.push("organic " + material);
+          } else {
+            materialInfo.materials.push(material);
+          }
+
+          // Higher percentage for explicit biodegradable claims
+          materialInfo.percentages.push(
+            material.includes("biodegradable") ||
+              material.includes("compostable")
+              ? 80
+              : 50
+          );
         }
       });
     }
@@ -1410,10 +1659,37 @@ function filterProducts() {
         } has eco-friendly claims: ${productInfo.ecoFriendlyClaims.join(", ")}`
       );
 
-      materialInfo.materials.push(
-        "eco-claim: " + productInfo.ecoFriendlyClaims.join(", ")
+      // More specific handling of eco-claims
+      const significantEcoClaims = productInfo.ecoFriendlyClaims.filter(
+        (claim) =>
+          [
+            "biodegradable",
+            "compostable",
+            "plastic-free",
+            "zero waste",
+          ].includes(claim)
       );
-      materialInfo.percentages.push(100);
+
+      if (significantEcoClaims.length > 0) {
+        materialInfo.materials.push(
+          "eco-claim: " + significantEcoClaims.join(", ")
+        );
+        materialInfo.percentages.push(100);
+
+        // If something is claimed biodegradable but we haven't detected it yet
+        if (
+          significantEcoClaims.some((claim) => claim === "biodegradable") &&
+          !materialInfo.materials.some((m) => m.includes("biodegradable"))
+        ) {
+          materialInfo.materials.push("biodegradable material");
+          materialInfo.percentages.push(90);
+        }
+      } else {
+        materialInfo.materials.push(
+          "eco-claim: " + productInfo.ecoFriendlyClaims.join(", ")
+        );
+        materialInfo.percentages.push(75); // Lower percentage for general claims
+      }
     }
 
     // Special case for plastic product searches:
